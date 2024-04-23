@@ -71,22 +71,24 @@ let viewAllRoles = function() {
         FROM role
         INNER JOIN department
             ON role.department_id = department.id;`, (err, result) => {
-        if (err) {
-          console.log(err);
-        } else {
-            const table = new Table({
-                head: ["Role ID", "Job Title", "Department Name", "Salary"]
-            });
+        
+            if (err) {
+            console.log(err);
+            } else {
+                const table = new Table({
+                    head: ["Role ID", "Job Title", "Department Name", "Salary"]
+                });
 
-            result.forEach(row => {
-                table.push([row.id, row.title, row.department_name, row.salary]);
-            });
+                result.forEach(row => {
+                    table.push([row.id, row.title, row.department_name, row.salary]);
+                });
 
-            console.log(table.toString());
+                console.log(table.toString());
 
-            initializeApp();
+                initializeApp();
+            }
         }
-    });
+    );
 }
 
 let viewAllEmployees = function() {
@@ -106,30 +108,56 @@ let viewAllEmployees = function() {
             ON role.department_id = department.id
         LEFT JOIN employee AS manager
             ON employee.manager_id = manager.id;`, (err, result) => {
-        if (err) {
-          console.log(err);
-        } else {
-            const table = new Table({
-                head: ["Employee ID", "First Name", "Last Name", "Job Title", "Department Name", "Salary", "Manager"]
-            });
+        
+            if (err) {
+                console.log(err);
+            } else {
+                const table = new Table({
+                    head: ["Employee ID", "First Name", "Last Name", "Job Title", "Department Name", "Salary", "Manager"]
+                });
 
-            result.forEach(row => {
-                if (row.manager === null) {
-                    row.manager = "None";
-                }
+                result.forEach(row => {
+                    if (row.manager === null) {
+                        row.manager = "None";
+                    }
 
-                table.push([row.id, row.first_name, row.last_name, row.title, row.department_name, row.salary, row.manager]);
-            });
+                    table.push([row.id, row.first_name, row.last_name, row.title, row.department_name, row.salary, row.manager]);
+                });
 
-            console.log(table.toString());
+                console.log(table.toString());
 
-            initializeApp();
+                initializeApp();
+            }
         }
-      });
+    );
 }
 
-let addADepartment = function() {
+let addADepartment = async function() {
+    let newDepartment = await inquirer.prompt(
+        [
+            {
+                name: 'department',
+                type: 'input',
+                message: 'What is the name of the new department?',
+            }
+        ]
+    )
 
+    console.log(newDepartment.department);
+    
+    db.query(
+        `INSERT INTO department (name)
+        VALUES
+            ("${newDepartment.department}")`,  (err, result) => {
+        
+            if (err) {
+                console.log(err);
+            } else {
+                console.log(result);
+                initializeApp();
+            }
+        }
+    );
 }
 
 let addARole = function() {
