@@ -1,5 +1,6 @@
 const inquirer = require("inquirer");
-const mysql = require('mysql2');
+const mysql = require("mysql2");
+const Table = require("cli-table3");
 
 const db = mysql.createConnection(
     {
@@ -44,9 +45,19 @@ let viewAllDepartments = function() {
     db.query("SELECT * FROM department", (err, result) => {
         if (err) {
           console.log(err);
+        } else {
+            const table = new Table({
+                head: ["Department ID", "Department Name"]
+            });
+
+            result.forEach(row => {
+                table.push([row.id, row.name]);
+            });
+
+            console.log(table.toString());
+
+            initializeApp();
         }
-        console.table(result);
-        initializeApp();
     });
 }
 
@@ -55,16 +66,26 @@ let viewAllRoles = function() {
         `SELECT 
             role.id, 
             title,
-            department.name AS "department name",
+            department.name AS "department_name",
             salary
         FROM role
         INNER JOIN department
             ON role.department_id = department.id;`, (err, result) => {
         if (err) {
           console.log(err);
+        } else {
+            const table = new Table({
+                head: ["Role ID", "Job Title", "Department Name", "Salary"]
+            });
+
+            result.forEach(row => {
+                table.push([row.id, row.title, row.department_name, row.salary]);
+            });
+
+            console.log(table.toString());
+
+            initializeApp();
         }
-        console.table(result);
-        initializeApp();
     });
 }
 
@@ -72,10 +93,10 @@ let viewAllEmployees = function() {
     db.query(
         `SELECT 
             employee.id,
-            employee.first_name AS "first name",
-            employee.last_name AS "last name",
+            employee.first_name,
+            employee.last_name,
             role.title,
-            department.name AS "department name",
+            department.name AS "department_name",
             role.salary,
             CONCAT(manager.first_name, " ", manager.last_name) AS manager
         FROM employee
@@ -87,9 +108,23 @@ let viewAllEmployees = function() {
             ON employee.manager_id = manager.id;`, (err, result) => {
         if (err) {
           console.log(err);
+        } else {
+            const table = new Table({
+                head: ["Employee ID", "First Name", "Last Name", "Job Title", "Department Name", "Salary", "Manager"]
+            });
+
+            result.forEach(row => {
+                if (row.manager === null) {
+                    row.manager = "None";
+                }
+
+                table.push([row.id, row.first_name, row.last_name, row.title, row.department_name, row.salary, row.manager]);
+            });
+
+            console.log(table.toString());
+
+            initializeApp();
         }
-        console.table(result);
-        initializeApp();
       });
 }
 
