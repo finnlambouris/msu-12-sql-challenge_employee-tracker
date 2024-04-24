@@ -42,7 +42,7 @@ let initializeApp = async function() {
 }
 
 let viewAllDepartments = function() {
-    db.query("SELECT * FROM department", (err, result) => {
+    db.query("SELECT * FROM department", (err, res) => {
         if (err) {
           console.log(err);
         } else {
@@ -50,7 +50,7 @@ let viewAllDepartments = function() {
                 head: ["Department ID", "Department Name"]
             });
 
-            result.forEach(row => {
+            res.forEach(row => {
                 table.push([row.id, row.name]);
             });
 
@@ -70,7 +70,7 @@ let viewAllRoles = function() {
             salary
         FROM role
         INNER JOIN department
-            ON role.department_id = department.id;`, (err, result) => {
+            ON role.department_id = department.id;`, (err, res) => {
         
             if (err) {
             console.log(err);
@@ -79,7 +79,7 @@ let viewAllRoles = function() {
                     head: ["Role ID", "Job Title", "Department Name", "Salary"]
                 });
 
-                result.forEach(row => {
+                res.forEach(row => {
                     table.push([row.id, row.title, row.department_name, row.salary]);
                 });
 
@@ -107,7 +107,7 @@ let viewAllEmployees = function() {
         INNER JOIN department
             ON role.department_id = department.id
         LEFT JOIN employee AS manager
-            ON employee.manager_id = manager.id;`, (err, result) => {
+            ON employee.manager_id = manager.id;`, (err, res) => {
         
             if (err) {
                 console.log(err);
@@ -116,7 +116,7 @@ let viewAllEmployees = function() {
                     head: ["Employee ID", "First Name", "Last Name", "Job Title", "Department Name", "Salary", "Manager"]
                 });
 
-                result.forEach(row => {
+                res.forEach(row => {
                     if (row.manager === null) {
                         row.manager = "None";
                     }
@@ -143,25 +143,97 @@ let addADepartment = async function() {
         ]
     )
 
-    console.log(newDepartment.department);
-    
     db.query(
         `INSERT INTO department (name)
         VALUES
-            ("${newDepartment.department}")`,  (err, result) => {
+            ("${newDepartment.department}")`,  (err, res) => {
         
             if (err) {
                 console.log(err);
             } else {
-                console.log(result);
+                console.log(res);
                 initializeApp();
             }
         }
     );
 }
 
-let addARole = function() {
+let addARole = async function() {
+    
+    let addNewRole = async function() {
+        let newRole = await inquirer.prompt(
+            [
+                {
+                    name: 'role',
+                    type: 'input',
+                    message: 'What is the name of the new role?',
+                }
+            ]
+        )
+        addNewSalary(newRole);
+    }
 
+    addNewRole();
+
+    let addNewSalary = async function(newRole) {
+        let newSalary = await inquirer.prompt(
+            [
+                {
+                    name: 'salary',
+                    type: 'input',
+                    message: 'What is the salary of the new role?',
+                }
+            ]
+        )
+        viewDepartments(newRole, newSalary);
+    }
+
+    let viewDepartments = function(newRole, newSalary) {
+        db.query("SELECT * FROM department", (err, res) => {
+            var departments = []
+            res.forEach(department => {
+                departments.push(department.name);
+            })
+            setDepartment(newRole, newSalary, departments);
+        });
+    }
+
+    let setDepartment = async function(newRole, newSalary, departments) {
+        let department = await inquirer.prompt(
+            [
+                {
+                    name: 'department',
+                    type: 'list',
+                    message: 'Which department does the new role belong to?',
+                    choices: departments,
+                }
+            ]
+        )
+        updateDatabase(newRole, newSalary, department)
+    };
+
+    let updateDatabase = function(newRole, newSalary, department) {
+        db.query("SELECT * FROM department", (err, res) => {
+            console.log(res);
+
+            let selectedDepartment = null
+            res.forEach(row => {
+                if(row.name === department.department) {
+                    selectedDepartment = row.id;
+                    console.log(selectedDepartment);
+                }
+            });
+
+            db.query(
+                `INSERT INTO role (title, salary, department_id)
+                VALUES
+                    ("${newRole.role}", ${newSalary.salary}, "${selectedDepartment}")`, (err, res) => {
+                        console.log(res);
+                        initializeApp();
+                    }
+            )
+        });
+    }
 }
 
 let addAnEmployee = function() {
