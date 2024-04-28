@@ -6,7 +6,7 @@ I WANT to be able to view and manage the departments, roles, and employees in my
 SO THAT I can organize and plan my business
 
 ## Deployed Application
-[Walkthrough Video]()
+[Walkthrough Video](https://youtu.be/b1MB8gqEAlA)
 
 ## Installation
 Node.js is needed to be able to run this code in the terminal.
