@@ -21,7 +21,7 @@ let initializeApp = async function() {
                 name: "options",
                 type: "list",
                 message: "What would you like to do?",
-                choices: ["View All Departments", "Add a Department", "View All Roles", "Add A Role", "View All Employees", "Add An Employee", "Update An Employee Role"]
+                choices: ["View All Departments", "Add a Department", "View All Roles", "Add A Role", "View All Employees", "Add An Employee", "Update An Employee Role", "Quit"]
             }
         ]
     )
@@ -40,6 +40,9 @@ let initializeApp = async function() {
         addAnEmployee();
     } else if (employeeManager.options === "Update An Employee Role") {
         updateAnEmployeeRole();
+    } else {
+        console.log("Thank you for using the Employee Manager App!");
+        return;
     }
 }
 
@@ -166,15 +169,17 @@ let addADepartment = async function() {
         ]
     )
 
+    newDepartment = newDepartment.department
+
     db.query(
         // inserts the new department into the database
         `INSERT INTO department (name)
         VALUES
-            ("${newDepartment.department}")`,
+            (?)`, [newDepartment],
             (err, res) => {
             try {
                 // alerts the user that their department has been added to the database
-                console.log(`The ${newDepartment.department} department has been added to the database.`);
+                console.log(`The ${newDepartment} department has been added to the database.`);
                 
                 // returns to application homepage
                 initializeApp();
@@ -198,6 +203,7 @@ let addARole = async function() {
                 }
             ]
         )
+        newRole = newRole.role
         addNewSalary(newRole);
     }
 
@@ -212,6 +218,7 @@ let addARole = async function() {
                 }
             ]
         )
+        newSalary = newSalary.salary
         viewDepartments(newRole, newSalary);
     }
 
@@ -242,6 +249,7 @@ let addARole = async function() {
                 }
             ]
         )
+        department = department.department
         findSelectedDepartment(newRole, newSalary, department)
     };
 
@@ -250,7 +258,7 @@ let addARole = async function() {
         db.query("SELECT * FROM department", (err, res) => {
             let selectedDepartment = null
             res.forEach(row => {
-                if (row.name === department.department) {
+                if (row.name === department) {
                     selectedDepartment = row.id;
                     updateEmployeeDatabase(newRole, newSalary, selectedDepartment);
                 }
@@ -263,11 +271,11 @@ let addARole = async function() {
         db.query(
             `INSERT INTO role (title, salary, department_id)
             VALUES
-                ("${newRole.role}", ${newSalary.salary}, "${selectedDepartment}")`,
+                (?, ?, ?)`, [newRole, newSalary, selectedDepartment],
                 (err, res) => {
                     try {
                         // alerts the user that their role has been added to the database
-                        console.log(`the ${newRole.role} role was added to the database.`);
+                        console.log(`the ${newRole} role was added to the database.`);
 
                         // returns to application homepage
                         initializeApp();
@@ -295,6 +303,7 @@ let addAnEmployee = function() {
                 }
             ]
         )
+        firstname = firstname.firstname
         addEmployeeLastname(firstname);
     }
 
@@ -309,6 +318,7 @@ let addAnEmployee = function() {
                 }
             ]
         )
+        lastname = lastname.lastname
         viewRoles(firstname, lastname);
     }
 
@@ -335,6 +345,7 @@ let addAnEmployee = function() {
                 }
             ]
         )
+        role = role.role
         viewManagers(firstname, lastname, role);
     }
 
@@ -362,6 +373,7 @@ let addAnEmployee = function() {
                 }
             ]
         )
+        manager = manager.manager
         findSelectedRole(firstname, lastname, role, manager);
     }
 
@@ -370,11 +382,11 @@ let addAnEmployee = function() {
         db.query("SELECT * FROM role", (err, res) => {
             let selectedRole = null
             res.forEach(row => {
-                if (row.title === role.role) {
+                if (row.title === role) {
                     selectedRole = row.id;
                 }
-                updateEmployeeDatabase(firstname, lastname, selectedRole, manager);
             });
+            updateEmployeeDatabase(firstname, lastname, selectedRole, manager);
         });
     }
 
@@ -383,7 +395,7 @@ let addAnEmployee = function() {
         db.query(
             `INSERT INTO employee (first_name, last_name, role_id)
             VALUES
-                ("${firstname.firstname}", "${lastname.lastname}", "${selectedRole}")`,
+                (?, ?, ?)`, [firstname, lastname, selectedRole],
                 (err, res) => {
                     findManager(firstname, lastname, selectedRole, manager);
                 }
@@ -395,11 +407,15 @@ let addAnEmployee = function() {
         db.query("SELECT * FROM employee", (err, res) => {
             let selectedManager = null
             res.forEach(row => {
-                if (row.first_name + " " + row.last_name === manager.manager) {
+                if (row.first_name + " " + row.last_name === manager) {
                     selectedManager = row.id;
+                    updateManager(firstname, lastname, selectedRole, selectedManager);
                 }
-                updateManager(firstname, lastname, selectedRole, selectedManager);
             });
+            if (!selectedManager) {
+                console.log(`${firstname} ${lastname} was added to the database.`);
+                initializeApp();
+            }
         });
     }
 
@@ -407,9 +423,10 @@ let addAnEmployee = function() {
     let updateManager = function(firstname, lastname, selectedRole, selectedManager) {
         db.query(
             `UPDATE employee
-            SET manager_id = ${selectedManager}
-            WHERE first_name = "${firstname.firstname}" AND last_name = "${lastname.lastname}" AND role_id = "${selectedRole}"`, (req, res) => {
-                console.log(`${firstname.firstname} ${lastname.lastname} was added to the database.`);
+            SET manager_id = ?
+            WHERE first_name = ? AND last_name = ? AND role_id = ?`, [selectedManager, firstname, lastname, selectedRole],
+            (req, res) => {
+                console.log(`${firstname} ${lastname} was added to the database.`);
                 initializeApp();
             }
         )
@@ -446,6 +463,7 @@ let updateAnEmployeeRole = function() {
                 }
             ]
         )
+        updatedEmployee = updatedEmployee.employee
         findEmployeeId(updatedEmployee);
     }
 
@@ -455,28 +473,28 @@ let updateAnEmployeeRole = function() {
             `SELECT CONCAT(first_name, " ", last_name) AS name, id FROM employee`, (err, res) => {
                 let employeeId = null
                 res.forEach(row => {
-                    if(row.name === updatedEmployee.employee) {
+                    if(row.name === updatedEmployee) {
                         employeeId = row.id
+                        viewRoles(updatedEmployee, employeeId);
                     }
                 });
-                viewRoles(employeeId);
             }
         );
     }
 
     // selects all the roles from the database and adds them to an array
-    let viewRoles = function(employeeId) {
+    let viewRoles = function(updatedEmployee, employeeId) {
         db.query("SELECT * FROM role", (err, res) => {
             let roles = []
             res.forEach(role => {
                 roles.push(role.title);
             })
-            selectNewRole(employeeId, roles);
+            selectNewRole(updatedEmployee, employeeId, roles);
         });
     }
 
     // prompts the user to select the employee's new role from the list of roles
-    let selectNewRole = async function(employeeId, roles) {
+    let selectNewRole = async function(updatedEmployee, employeeId, roles) {
         let newRole = await inquirer.prompt(
             [
                 {
@@ -487,30 +505,31 @@ let updateAnEmployeeRole = function() {
                 }
             ]
         )
-        findSelectedRole(employeeId, newRole);
+        newRole = newRole.role
+        findSelectedRole(updatedEmployee, employeeId, newRole);
     }
 
     // finds the selected role
-    let findSelectedRole = function(employeeId, newRole) {
+    let findSelectedRole = function(updatedEmployee, employeeId, newRole) {
         db.query("SELECT * FROM role", (err, res) => {
             let selectedRole = null
             res.forEach(row => {
-                if(row.title === newRole.role) {
-                    selectedRole = row.id;           
+                if(row.title === newRole) {
+                    selectedRole = row.id;   
+                    updateEmployeeDatabase(updatedEmployee, employeeId, selectedRole);        
                 }
-                updateEmployeeDatabase(employeeId, selectedRole);
             });
         });
     }
 
     // updates the selected employee's new role in the database
-    let updateEmployeeDatabase = function(employeeId, selectedRole) {
+    let updateEmployeeDatabase = function(updatedEmployee, employeeId, selectedRole) {
         db.query(
             `UPDATE employee
-            SET role_id = ${selectedRole}
-            WHERE id = ${employeeId}`,
+            SET role_id = ?
+            WHERE id = ?`, [selectedRole, employeeId],
             (err, res) => {
-                console.log(`The employee's new role has been set.`);
+                console.log(`${updatedEmployee}'s new role has been set.`);
                 initializeApp();
             }
         );
@@ -522,5 +541,3 @@ let updateAnEmployeeRole = function() {
 
 // initializes the app
 initializeApp();
-
-// TO-DO: sanitize database inputs
